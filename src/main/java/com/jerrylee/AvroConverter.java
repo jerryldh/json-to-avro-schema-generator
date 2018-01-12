@@ -1,10 +1,11 @@
-package com.sgmarghade;
+package com.jerrylee;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.io.DecoderFactory;
@@ -18,19 +19,11 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * @author swapnil.marghade on 07/12/15.
+ * @author jerrylee
  */
 public class AvroConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(AvroConverter.class);
-
-    private static final String NAME = "name";
-    private static final String TYPE = "type";
-    private static final String ARRAY = "array";
-    private static final String ITEMS = "items";
-    private static final String STRING = "string";
-    private static final String RECORD = "record";
-    private static final String FIELDS = "fields";
 
     private final ObjectMapper mapper;
 
@@ -55,7 +48,8 @@ public class AvroConverter {
     public boolean validate(final String avroSchemaString, final String jsonString) throws IOException {
         Schema.Parser t = new Schema.Parser();
         Schema schema = t.parse(avroSchemaString);
-        GenericDatumReader reader = new GenericDatumReader(schema);
+        @SuppressWarnings("rawtypes")
+		GenericDatumReader reader = new GenericDatumReader(schema);
         JsonDecoder decoder = DecoderFactory.get().jsonDecoder(schema, jsonString);
         reader.read(null, decoder);
         return true;
@@ -69,12 +63,12 @@ public class AvroConverter {
      * @throws IOException
      */
     public String convert(final String json) throws IOException {
-        final JsonNode jsonNode = mapper.readTree(json);
+    	final JsonNode jsonNode = mapper.readTree(json);
         final ObjectNode finalSchema = mapper.createObjectNode();
-        finalSchema.put("namespace", "com.sgmarghade.test");
-        finalSchema.put(NAME, "outer_record");
-        finalSchema.put(TYPE, RECORD);
-        finalSchema.set(FIELDS, getFields(jsonNode));
+        finalSchema.put(SchemaUtils.SchemaNS, "com.jnj.adf.adf-kafka");
+        finalSchema.put(SchemaUtils.SchemaName, "com.jnj.adf.adf-kafka");
+        finalSchema.put(SchemaUtils.SchemaType, SchemaUtils.SchemaRecord);
+        finalSchema.set(SchemaUtils.SchemaFields, getFields(jsonNode));
         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(finalSchema);
     }
 
@@ -92,29 +86,33 @@ public class AvroConverter {
             final JsonNode nextNode = map.getValue();
 
             switch (nextNode.getNodeType()) {
+            	case BOOLEAN:
+            		fields.add(mapper.createObjectNode().put(SchemaUtils.SchemaName, map.getKey()).put(SchemaUtils.SchemaType, SchemaUtils.BooleanType));
+                    break;
+            
                 case NUMBER:
-                    fields.add(mapper.createObjectNode().put(NAME, map.getKey()).put(TYPE, (nextNode.isLong() ? "long" : "double")));
+                    fields.add(mapper.createObjectNode().put(SchemaUtils.SchemaName, map.getKey()).put(SchemaUtils.SchemaType, (nextNode.isLong() ? "long" : "double")));
                     break;
 
                 case STRING:
-                    fields.add(mapper.createObjectNode().put(NAME, map.getKey()).put(TYPE, STRING));
+                    fields.add(mapper.createObjectNode().put(SchemaUtils.SchemaName, map.getKey()).put(SchemaUtils.SchemaType, SchemaUtils.StringType));
                     break;
 
                 case ARRAY:
                     final ArrayNode arrayNode = (ArrayNode) nextNode;
                     final JsonNode element = arrayNode.get(0);
                     final ObjectNode objectNode = mapper.createObjectNode();
-                    objectNode.put(NAME, map.getKey());
+                    objectNode.put(SchemaUtils.SchemaName, map.getKey());
 
                     if (element.getNodeType() == JsonNodeType.NUMBER) {
-                        objectNode.set(TYPE, mapper.createObjectNode().put(TYPE, ARRAY).put(ITEMS, (nextNode.isLong() ? "long" : "double")));
+                        objectNode.set(SchemaUtils.SchemaType, mapper.createObjectNode().put(SchemaUtils.SchemaType, SchemaUtils.ArrayType).put(SchemaUtils.SchemaItems, (nextNode.isLong() ? "long" : "double")));
                         fields.add(objectNode);
                     } else if (element.getNodeType() == JsonNodeType.STRING) {
-                        objectNode.set(TYPE, mapper.createObjectNode().put(TYPE, ARRAY).put(ITEMS, STRING));
+                        objectNode.set(SchemaUtils.SchemaType, mapper.createObjectNode().put(SchemaUtils.SchemaType, SchemaUtils.ArrayType).put(SchemaUtils.SchemaItems, SchemaUtils.StringType));
                         fields.add(objectNode);
                     } else {
-                        objectNode.set(TYPE, mapper.createObjectNode().put(TYPE, ARRAY).set(ITEMS, mapper.createObjectNode()
-                                .put(TYPE, RECORD).put(NAME, generateRandomNumber(map)).set(FIELDS, getFields(element))));
+                        objectNode.set(SchemaUtils.SchemaType, mapper.createObjectNode().put(SchemaUtils.SchemaType, SchemaUtils.ArrayType).set(SchemaUtils.SchemaItems, mapper.createObjectNode()
+                                .put(SchemaUtils.SchemaType, SchemaUtils.SchemaRecord).put(SchemaUtils.SchemaName, generateRandomNumber(map)).set(SchemaUtils.SchemaFields, getFields(element))));
                     }
                     fields.add(objectNode);
                     break;
@@ -122,8 +120,8 @@ public class AvroConverter {
                 case OBJECT:
 
                     ObjectNode node = mapper.createObjectNode();
-                    node.put(NAME, map.getKey());
-                    node.set(TYPE, mapper.createObjectNode().put(TYPE, RECORD).put(NAME, generateRandomNumber(map)).set(FIELDS, getFields(nextNode)));
+                    node.put(SchemaUtils.SchemaName, map.getKey());
+                    node.set(SchemaUtils.SchemaType, mapper.createObjectNode().put(SchemaUtils.SchemaType, SchemaUtils.SchemaRecord).put(SchemaUtils.SchemaName, generateRandomNumber(map)).set(SchemaUtils.SchemaFields, getFields(nextNode)));
                     fields.add(node);
                     break;
 
