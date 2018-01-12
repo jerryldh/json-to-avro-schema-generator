@@ -65,8 +65,8 @@ public class AvroConverter {
     public String convert(final String json) throws IOException {
     	final JsonNode jsonNode = mapper.readTree(json);
         final ObjectNode finalSchema = mapper.createObjectNode();
-        finalSchema.put(SchemaUtils.SchemaNS, "com.jnj.adf.adf-kafka");
-        finalSchema.put(SchemaUtils.SchemaName, "com.jnj.adf.adf-kafka");
+        finalSchema.put(SchemaUtils.SchemaNS, "com.jerrylee.na");
+        finalSchema.put(SchemaUtils.SchemaName, "com.jerrylee.schema");
         finalSchema.put(SchemaUtils.SchemaType, SchemaUtils.SchemaRecord);
         finalSchema.set(SchemaUtils.SchemaFields, getFields(jsonNode));
         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(finalSchema);
