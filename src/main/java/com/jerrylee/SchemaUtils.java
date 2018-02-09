@@ -17,6 +17,6 @@ public class SchemaUtils {
 	public static String ShortType = "short";
 	public static String LongType = "long";
 	public static String DoubleType = "double";
-	public static String StringType = "boolean";
+	public static String StringType = "string";
 	public static String NullType = "null";
 }

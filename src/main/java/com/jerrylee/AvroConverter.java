@@ -62,11 +62,11 @@ public class AvroConverter {
      * @return avro schema json
      * @throws IOException
      */
-    public String convert(final String json) throws IOException {
+    public String convert(final String json, String ns) throws IOException {
     	final JsonNode jsonNode = mapper.readTree(json);
         final ObjectNode finalSchema = mapper.createObjectNode();
-        finalSchema.put(SchemaUtils.SchemaNS, "com.jerrylee.na");
-        finalSchema.put(SchemaUtils.SchemaName, "com.jerrylee.schema");
+        finalSchema.put(SchemaUtils.SchemaNS, "ns.com.jerrylee.ns"+ns);
+        finalSchema.put(SchemaUtils.SchemaName, "com.jerrylee.schema"+ns);
         finalSchema.put(SchemaUtils.SchemaType, SchemaUtils.SchemaRecord);
         finalSchema.set(SchemaUtils.SchemaFields, getFields(jsonNode));
         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(finalSchema);
@@ -91,7 +91,16 @@ public class AvroConverter {
                     break;
             
                 case NUMBER:
-                    fields.add(mapper.createObjectNode().put(SchemaUtils.SchemaName, map.getKey()).put(SchemaUtils.SchemaType, (nextNode.isLong() ? "long" : "double")));
+                	String type = "int";
+                	if(nextNode.isInt())
+                		type = "int";
+                	if(nextNode.isDouble())
+                		type = "double";
+                	if(nextNode.isFloat())
+                		type = "float";
+                	if(nextNode.isLong())
+                		type = "long";
+                    fields.add(mapper.createObjectNode().put(SchemaUtils.SchemaName, map.getKey()).put(SchemaUtils.SchemaType, type));
                     break;
 
                 case STRING:
